@@ -165,7 +165,7 @@ class OptInit:
         file_handler.setFormatter(log_format)
         logger.addHandler(file_handler)
         logging.root = logger
-        logging.info("saving log, checkpoint and back up code in folder: {}".format(self.args.exp_dir))
+        logging.info("saving log, checkpoint and back up code")
 
     def _set_seed(self, seed=0):
         random.seed(seed)

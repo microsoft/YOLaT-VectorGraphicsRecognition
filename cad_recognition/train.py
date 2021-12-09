@@ -220,7 +220,7 @@ def main():
     for _ in range(opt.total_epochs):
         opt.epoch += 1
         train(model, train_loader, optimizer, scheduler, criterion, opt)
-        if opt.epoch % 1 == 0 and opt.epoch >= 0:
+        if opt.epoch % 1 == 0 and opt.epoch >= 20:
             test_value = test(model, test_loader, criterion, opt)
         scheduler.step()
     logging.info('Saving the final model.Finish!')

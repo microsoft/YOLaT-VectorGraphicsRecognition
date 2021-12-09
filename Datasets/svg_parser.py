@@ -764,7 +764,7 @@ class SVGParser:
         self.dom = parse(filepath)
         self.root = self.dom.documentElement
         self.shapes = ['line', 'path', 'circle']
-        self.filtered_nodename = ['image', 'g']
+        self.filtered_nodename = ['image', 'g', 'defs']
 
     def _traverse_tree(self, root, ret_list, parent_attrs):
         parent_attrs = copy.copy(parent_attrs)

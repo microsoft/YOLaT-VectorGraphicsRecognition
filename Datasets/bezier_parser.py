@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
 from svgpathtools import parse_path, wsvg
 from svgpathtools import Path, Line, QuadraticBezier, CubicBezier, Arc
 from Datasets.a2c import a2c

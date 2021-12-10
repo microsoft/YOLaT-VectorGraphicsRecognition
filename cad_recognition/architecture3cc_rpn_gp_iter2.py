@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import torch
 from torch.nn import Linear as Lin
 import torch_geometric as tg

@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
 import numpy as np
 from xml.dom.minidom import parse, Node, parseString
 from sklearn.metrics.pairwise import euclidean_distances

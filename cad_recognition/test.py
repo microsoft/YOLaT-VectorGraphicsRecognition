@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
 import __init__
 from tqdm import tqdm
 import numpy as np

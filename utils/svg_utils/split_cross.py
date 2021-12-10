@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
 from xml.dom.minidom import parse, Node, parseString
 from svgpathtools import parse_path, wsvg
 from svgpathtools import Path, Line, QuadraticBezier, CubicBezier, Arc

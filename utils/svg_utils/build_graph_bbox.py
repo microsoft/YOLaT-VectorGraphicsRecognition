@@ -19,13 +19,17 @@ from Datasets.bezier_parser import BezierParser
 from utils.svg_utils.split_cross import split_cross
 
 def shape2Path(type_dict):
+    # svg to Bézier curve
     parser = BezierParser()
     paths = Path()
+
+    #line
     for start_end in type_dict['line']['start_end']:
         x0, y0, x1, y1 = start_end
         path = parser.line2BezierPath({'x1':x0, 'y1':y0, 'x2':x1, 'y2':y1})
         paths += path
-    
+
+    #arc
     for start_end, param in zip(type_dict['arc']['start_end'], type_dict['arc']['param']):
         start = complex(start_end[0], start_end[1])
         radius = complex(param[0], param[1])
@@ -36,7 +40,8 @@ def shape2Path(type_dict):
         #path = Path(Arc(start, radius, rotation, large_arc, sweep, end))
         path = parser._a2c(Arc(start, radius, rotation, large_arc, sweep, end))
         paths += path
-        
+
+    #circle
     for param in type_dict['circle']['param']:
         cx, cy, r = param
         path = parser.circle2BezierPath({'cx':cx, 'cy':cy, 'r':r})
@@ -86,7 +91,6 @@ def mergeCC(node_dict):
     is_control = node_dict['attr']['is_control']
 
     cc = getConnnectedComponent(node_dict)
-    
 
     paths = []
     bboxs = []
@@ -145,10 +149,10 @@ def mergeCC(node_dict):
                     if inter_rect_x2 - inter_rect_x1 == 0 and max(inter_rect_y2 - inter_rect_y1, 0) > 0.9 * (child_bb[3] - child_bb[1]):
                         is_parent_child = True
                 if child_bb[3] - child_bb[1] == 0:
-                    if  max(inter_rect_x2 - inter_rect_x1, 0) > 0.9 * (child_bb[2] - child_bb[0]) and inter_rect_y2 - inter_rect_y1 == 0:
+                    if max(inter_rect_x2 - inter_rect_x1, 0) > 0.9 * (child_bb[2] - child_bb[0]) and inter_rect_y2 - inter_rect_y1 == 0:
                         is_parent_child = True
             
-            if is_parent_child:
+            if is_parent_child: # same cc
                 for parent_idx in cc[i]:
                     for child_idx in cc[j]:
                         cross_shape_edges.append(tuple(sorted([parent_idx, child_idx])))
@@ -297,8 +301,8 @@ def getSuperNode(node_dict):
 
 if __name__ == '__main__':
     graph_builder = SVGGraphBuilderBezier()
-    input_dir = '/data/xinyangjiang/Datasets/SESYD/FloorPlansGraph5_iter_bak/'#'/D_data/xinyangjiang/Datasets/SESYD/FloorPlans/'
-    output_dir = '/data/xinyangjiang/Datasets/SESYD/FloorPlansGraph5_iter_bak/' #'FloorPlansSplitCrossGraph'
+    input_dir = 'data/FloorPlansGraph5_iter/'
+    output_dir = 'data/FloorPlansGraph5_iter/'
     dir_list = os.listdir(input_dir)
 
     angles = []
@@ -314,8 +318,7 @@ if __name__ == '__main__':
             p = SVGParser(filepath)
             type_dict = split_cross(p.get_all_shape())
             width, height = p.get_image_size()
-            paths = shape2Path(type_dict)
-            
+            paths = shape2Path(type_dict) # get Bezier curve
             node_dict = graph_builder.bezierPath2Graph(paths, 
                 {'width':width, 
                 'height':height, 
@@ -324,30 +327,33 @@ if __name__ == '__main__':
             )
             
             #print(node_dict['edge']['shape'])
-            for key in node_dict:
+            for key in node_dict: #pos, attr, edge, edge_attr...
                 for k in node_dict[key]:
                     node_dict[key][k] = np.array(node_dict[key][k])
                     if len(node_dict[key][k].shape) == 1:
                         node_dict[key][k] = node_dict[key][k][:, None]
-                    #print(key, k, node_dict[key][k].shape)
 
+            # merge nodes that are close
             node_dict = graph_builder.mergeNode(node_dict)
             if True:
-                e = node_dict['edge']['shape']
+                e = node_dict['edge']['shape'] # edges: [[s, e]]
                 for ee in e:
                     if ee[0] == ee[1]:
                         print(ee)
             
             #getConnnectedComponent(node_dict)
             #super_pos, super_color, shape_shape_edges, super_shape_edges, super_super_edges, bbox_paths = getSuperNode(node_dict)
+
+            # merge connected components
             shape_shape_edges, cross_shape_edges, shape_shape_edge_attr, cross_shape_edge_attr, bbox_paths, cc = mergeCC(node_dict)
             bbox_paths.append(paths)
             
-            start_end_size = node_dict['pos']['spatial'].shape[0]
+            start_end_size = node_dict['pos']['spatial'].shape[0] # num of nodes
+
             #node_dict['pos']['spatial'] = np.concatenate([node_dict['pos']['spatial'], super_pos], axis = 0)
             #node_dict['attr']['color'] = np.concatenate([node_dict['attr']['color'], super_color], axis = 0)
             #node_dict['edge']['super'] = np.concatenate([shape_shape_edges, super_shape_edges, super_super_edges], axis = 0)
-            node_dict['edge']['super'] = np.concatenate([shape_shape_edges, cross_shape_edges], axis = 0)
+            node_dict['edge']['super'] = np.concatenate([shape_shape_edges, cross_shape_edges], axis=0) # super: position-wise edge
             #node_dict['attr']['is_control'] = np.concatenate([node_dict['attr']['is_control'], np.zeros((super_pos.shape[0], 1)).astype(np.bool)], axis = 0)
             #node_dict['attr']['is_super'] = np.concatenate([np.zeros((start_end_size, 1)).astype(np.bool), np.ones((super_pos.shape[0], 1)).astype(np.bool)], axis = 0)
             node_dict['attr']['is_super'] = np.zeros((start_end_size, 1)).astype(np.bool)

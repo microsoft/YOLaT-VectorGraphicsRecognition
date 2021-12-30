@@ -7,7 +7,7 @@
 # bash Anaconda3-2019.07-Linux-x86_64.sh
 
 
-source ~/.bashrc
+
 export TORCH_CUDA_ARCH_LIST="7.0;7.5"   # v100: 7.0; 2080ti: 7.5; titan xp: 6.1
 
 # make sure system cuda version is the same with pytorch cuda

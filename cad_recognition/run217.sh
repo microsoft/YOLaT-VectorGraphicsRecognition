@@ -1,2 +1,0 @@
-export CUDA_VISIBLE_DEVICES=1
-python -u train.py --batch_size 4 --data_dir /data/xinyangjiang/Datasets/SESYD/FloorPlansGraph5_iter --phase train --lr 2.5e-4 --lr_adjust_freq 9999999999999999999999999999999999999 --in_channels 5 --n_blocks 2 --n_blocks_out 2 --arch centernet3cc_rpn_gp_iter2  --graph bezier_cc_bb_iter --data_aug true  --weight_decay 1e-5 --postname run182_2 --dropout 0.0 --do_mixup 0 --bbox_sampling_step 5

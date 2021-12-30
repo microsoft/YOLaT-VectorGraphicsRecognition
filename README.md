@@ -23,7 +23,7 @@ b) Run the following scripts to prepare the dataset for training/inference.
 python utils/svg_utils/build_graph_bbox.py
 ```
 #### Diagrams
-a) Download and unzip the [Diagrams dataset](http://mathieu.delalandre.free.fr/projects/sesyd/symbols/diagrams.html) to the dataset folder: `data/diagram`
+a) Download and unzip the [Diagrams dataset](http://mathieu.delalandre.free.fr/projects/sesyd/symbols/diagrams.html) to the dataset folder: `data/diagrams`
 
 b) Run the following scripts to prepare the dataset for training/inference.
 ```sh

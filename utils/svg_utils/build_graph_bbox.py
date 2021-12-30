@@ -301,8 +301,8 @@ def getSuperNode(node_dict):
 
 if __name__ == '__main__':
     graph_builder = SVGGraphBuilderBezier()
-    input_dir = '/home/zhiyingzhu/f'#'data/FloorPlansGraph5_iter/'
-    output_dir = '/home/zhiyingzhu/f' #'data/FloorPlansGraph5_iter/'
+    input_dir = 'data/FloorPlansGraph5_iter/'
+    output_dir = 'data/FloorPlansGraph5_iter/'
     dir_list = os.listdir(input_dir)
 
     angles = []

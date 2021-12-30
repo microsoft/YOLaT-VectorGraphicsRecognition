@@ -110,6 +110,7 @@ def draw_cluster_graph(svg_path, save_path, width, height, bboxs, pos, is_contro
             facecolor="none",
         )
       ax.add_patch(bbox)
+    os.makedirs(save_path, exist_ok=True)
     plt.savefig(save_path, bbox_inches="tight", pad_inches=0.0, dpi=600)
  
 def mergeCluster(cc, bboxs, ratio=None, expand_length=None):
@@ -232,8 +233,7 @@ def mergeCC(node_dict, svg_path, width, height):
             ))
 
     svg_path_list = svg_path.split('/')
-    
-    draw_cluster_graph(svg_path, "/data/xinyangjiang/Datasets/diagram_expand_len_graph/{}_{}".format(svg_path_list[-2], svg_path_list[-1].replace('.svg', '.pdf')), width, height, bboxs, pos, is_control, edges)
+    draw_cluster_graph(svg_path, "data/diagram_expand_len_graph/{}_{}".format(svg_path_list[-2], svg_path_list[-1].replace('.svg', '.pdf')), width, height, bboxs, pos, is_control, edges)
     print("draw bbox and node of {}".format(svg_path))
 
     cross_shape_edges = []
@@ -328,10 +328,9 @@ def mergeCC(node_dict, svg_path, width, height):
 
 if __name__ == '__main__':
     graph_builder = SVGGraphBuilderBezier()
-    #input_dir = '/home/v-luliu1/datasets/floorplans_test'
-    #output_dir = '/home/v-luliu1/datasets/floorplans_test'
-    input_dir = '/data/xinyangjiang/Datasets/SESYD/diagram2'
-    output_dir = '/data/xinyangjiang/Datasets/SESYD/diagram2'
+
+    input_dir = 'data/diagrams/'
+    output_dir = 'data/diagrams/'
     dir_list = os.listdir(input_dir)
 
     angles = []

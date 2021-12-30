@@ -147,7 +147,6 @@ class SVGGraphBuilderBezier2:
     def mergeNode(self, graph_dict):
         pos = graph_dict['pos']['spatial']
         sim_pos = euclidean_distances(pos, pos)
-        #print('euc dist', sim_pos)
         #np.set_printoptions(threshold=np.inf)
         sim_pos = (sim_pos < 1e-3)
 
@@ -155,7 +154,6 @@ class SVGGraphBuilderBezier2:
         
         sim_attr = np.ones((pos.shape[0], pos.shape[0])).astype(bool)
         for key in graph_dict['attr']:
-            #print(key)
             s = euclidean_distances(graph_dict['attr'][key], graph_dict['attr'][key])
             s = (s < 1e-8)
             #print(s)
@@ -163,6 +161,7 @@ class SVGGraphBuilderBezier2:
 
         #sim_att = (sim_att > 0)
 
+        # similar node: similar pos & attr & is end point
         sim = sim_pos * sim_attr * (is_control == 0)
         #print('sim', sim)
         #print('sim_pos', sim_pos)

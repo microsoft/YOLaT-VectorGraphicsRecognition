@@ -2,7 +2,7 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)](https://arxiv.org/abs/2111.03281)
 
-This repository is the official PyTorch implementation of our NeurIPS-2022 [paper](https://arxiv.org/abs/2111.03281): Recognizing Vector Graphics without Rasterization.
+This repository is the official PyTorch implementation of our NeurIPS-2021 [paper](https://arxiv.org/abs/2111.03281): Recognizing Vector Graphics without Rasterization.
 
 ## Environments
 ```sh

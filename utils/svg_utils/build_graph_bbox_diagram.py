@@ -175,7 +175,6 @@ def mergeCluster(cc, bboxs, ratio=None, expand_length=None):
     new_bboxs.append([min(cc_bboxs[:, 0]), min(cc_bboxs[:, 1]), max(cc_bboxs[:, 2]), max(cc_bboxs[:, 3])])
   return new_cc, new_bboxs  
 
-    #draw_cluster_graph("/home/v-luliu1/datasets/diagram/diagrams21-07/file_73.svg", "/home/v-luliu1/datasets/73.pdf",4197.856863, 1870.7141609999999, bboxs, pos, is_control, edges)
 def mergeCC(node_dict, svg_path, width, height):
     edges = node_dict['edge']['shape']
     pos = node_dict['pos']['spatial']
@@ -224,7 +223,6 @@ def mergeCC(node_dict, svg_path, width, height):
 
     svg_path_list = svg_path.split('/')
     
-    #draw_cluster_graph(svg_path, "/home/v-luliu1/datasets/diagram_expand_len_graph/{}_{}".format(svg_path_list[-2], svg_path_list[-1].replace('.svg', '.pdf')), width, height, bboxs, pos, is_control, edges)
     #print("draw bbox and node of {}".format(svg_path))
 
     cross_shape_edges = []
@@ -314,10 +312,8 @@ def mergeCC(node_dict, svg_path, width, height):
 
 if __name__ == '__main__':
     graph_builder = SVGGraphBuilderBezier()
-    #input_dir = '/home/v-luliu1/datasets/floorplans_test'
-    #output_dir = '/home/v-luliu1/datasets/floorplans_test'
-    input_dir = '/data/xinyangjiang/Datasets/SESYD/diagram2'
-    output_dir = '/data/xinyangjiang/Datasets/SESYD/diagram2'
+    input_dir = 'data/diagram'
+    output_dir = 'data/diagram'
     dir_list = os.listdir(input_dir)
 
     angles = []

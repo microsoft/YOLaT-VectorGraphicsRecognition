@@ -20,14 +20,16 @@ a) Download and unzip the [Floorplans dataset](http://mathieu.delalandre.free.fr
 b) Run the following scripts to prepare the dataset for training/inference.
 
 ```sh
-python utils/svg_utils/build_graph_bbox.py
+cd utils
+python svg_utils/build_graph_bbox.py
 ```
 #### Diagrams
 a) Download and unzip the [Diagrams dataset](http://mathieu.delalandre.free.fr/projects/sesyd/symbols/diagrams.html) to the dataset folder: `data/diagrams`
 
 b) Run the following scripts to prepare the dataset for training/inference.
 ```sh
-python utils/svg_utils/build_graph_bbox_diagram.py
+cd utils
+python svg_utils/build_graph_bbox_diagram.py
 ```
 
 ### 2. Training & Inference

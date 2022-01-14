@@ -53,62 +53,56 @@ class SESYDFloorPlan(torch.utils.data.Dataset):
 
         self.normalize_bbox = True
         self.do_mixup = do_mixup
-        self.class_dict = {
-            'armchair':0, 
-            'bed':1, 
-            'door1':2, 
-            'door2':3, 
-            'sink1':4, 
-            'sink2':5, 
-            'sink3':6, 
-            'sink4':7, 
-            'sofa1':8, 
-            'sofa2':9, 
-            'table1':10, 
-            'table2':11, 
-            'table3':12, 
-            'tub':13, 
-            'window1':14, 
-            'window2':15, 
-            'None': 16
-        }
+        
+        if 'diagram' in os.path.dirname(svg_list[0]):
+            self.class_dict = {
+                'diode2':0, 
+                'capacitor2': 1, 
+                'diode3': 2, 
+                'earth': 3, 
+                'battery1': 4, 
+                'battery2': 5, 
+                'core-iron': 6, 
+                'outlet': 7, 
+                'transistor-npn': 8, 
+                'capacitor1': 9, 
+                'resistor': 10, 
+                'relay': 11, 
+                'core-air': 12, 
+                'transistor-mosfetn': 13, 
+                'transistor-mosfetp': 14, 
+                'core-hiron': 15, 
+                'transistor-pnp': 16, 
+                'diode1': 17, 
+                'diodephoto': 18, 
+                'gate-ampli':19, 
+                'unspecified': 20, 
+                'None': 21
+            }
+
+        else:
+            self.class_dict = {
+                'armchair':0, 
+                'bed':1, 
+                'door1':2, 
+                'door2':3, 
+                'sink1':4, 
+                'sink2':5, 
+                'sink3':6, 
+                'sink4':7, 
+                'sofa1':8, 
+                'sofa2':9, 
+                'table1':10, 
+                'table2':11, 
+                'table3':12, 
+                'tub':13, 
+                'window1':14, 
+                'window2':15, 
+                'None': 16
+            }
 
         self.n_classes = len(list(self.class_dict.keys()))
         
-        '''
-        self.class_dict = {
-            'armchair':0, 
-            'bed':1, 
-            'door1':2, 
-            'door2':2, 
-            'sink1':3, 
-            'sink2':3, 
-            'sink3':3, 
-            'sink4':3, 
-            'sofa1':4, 
-            'sofa2':4, 
-            'table1':5, 
-            'table2':5, 
-            'table3':5, 
-            'tub':6, 
-            'window1':7, 
-            'window2':7
-        }
-        '''
-        #self.anchors = self.get_anchor()
-        '''
-        self.n_objects = 0
-        for idx in range(len(self.svg_list)):
-            filepath = self.svg_list[idx]
-            print(filepath)
-            p = SVGParser(filepath)
-            width, height = p.get_image_size()
-            #graph_dict = self.graph_builder.buildGraph(p.get_all_shape())
-
-            gt_bbox, gt_labels = self._get_bbox(filepath, width, height)
-            self.n_objects += gt_bbox.shape[0]
-        print(self.n_objects)
-        '''
         self.n_objects = 13238
 
     def __len__(self):

@@ -312,8 +312,8 @@ def mergeCC(node_dict, svg_path, width, height):
 
 if __name__ == '__main__':
     graph_builder = SVGGraphBuilderBezier()
-    input_dir = 'data/diagram'
-    output_dir = 'data/diagram'
+    input_dir = 'data/diagram/'
+    output_dir = 'data/diagram/'
     dir_list = os.listdir(input_dir)
 
     angles = []

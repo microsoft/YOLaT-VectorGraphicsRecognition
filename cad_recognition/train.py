@@ -174,14 +174,14 @@ def main():
     opt = OptInit().get_args()
     logging.info('===> Creating dataloader ...')
 
-    train_dataset = CADDataset(opt.data_dir, opt, partition = 'train', data_aug = opt.data_aug, do_mixup = opt.do_mixup, drop_edge = opt.drop_edge)
+    train_dataset = CADDataset(opt.data_dir, opt, partition = 'train', data_aug = opt.data_aug, do_mixup = opt.do_mixup, drop_edge = opt.drop_edge, bbox_sampling_step = opt.bbox_sampling_step)
     train_loader = DataLoader(train_dataset, 
         batch_size=opt.batch_size, 
         shuffle=True, 
         num_workers=8, 
         collate_fn = collate)
     
-    test_dataset = CADDataset(opt.data_dir, opt, partition = 'test', data_aug = False, do_mixup = False, drop_edge = False)
+    test_dataset = CADDataset(opt.data_dir, opt, partition = 'test', data_aug = False, do_mixup = False, drop_edge = False, bbox_sampling_step = opt.bbox_sampling_step)
     test_loader = DataLoader(test_dataset, 
         batch_size=opt.batch_size * 2, 
         shuffle=False, 

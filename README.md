@@ -1,4 +1,4 @@
-# :fire: [NIPS2021, TPAMI2024] YOLaT & YOLaT++-VectorGraphicsRecognition
+# :fire: [NIPS2021, TPAMI2024] YOLaT & YOLaT++: Powerful and Efficient Graph Models for Vector Graphics Recognition
 ##  :scroll: Introduction
 [![arXiv](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)](https://arxiv.org/abs/2111.03281)
 

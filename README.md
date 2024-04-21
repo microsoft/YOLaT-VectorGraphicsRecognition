@@ -55,6 +55,7 @@ CUDA_VISIBLE_DEVICES=0 python -u train.py --batch_size 4 --data_dir data/diagram
 ## YOLaT++
 <p align="center">
 <img alt="img-name" src="misc/Yolat%2B%2B.png" width="900">
+  
 YOLaT++ is introduced, characterized by a hierarchical structure designed for VGs, spanning three levels: **Primitive, Curve, and Point**. Additionally, YOLaT++ employs a position-aware enhancement strategy to effectively differentiate similar primitives. 
 
 ## Citation

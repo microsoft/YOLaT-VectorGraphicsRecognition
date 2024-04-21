@@ -49,12 +49,29 @@ CUDA_VISIBLE_DEVICES=0 python -u train.py --batch_size 4 --data_dir data/diagram
 
 
 ## Citation
-      @inproceedings{jiang2021recognizing,
-      title={{Recognizing Vector Graphics without Rasterization}},
-      author={Jiang, Xinyang and Liu, Lu and Shan, Caihua and Shen, Yifei and Dong, Xuanyi and Li, Dongsheng},
-      booktitle={Proceedings of Advances in Neural Information Processing Systems (NIPS)},
-      volume={34},
-      number={},
-      pages={},
-      year={2021}}
+BibTex:
+```
+@inproceedings{jiang2021recognizing,
+title={{Recognizing Vector Graphics without Rasterization}},
+author={Jiang, Xinyang and Liu, Lu and Shan, Caihua and Shen, Yifei and Dong, Xuanyi and Li, Dongsheng},
+booktitle={Proceedings of Advances in Neural Information Processing Systems (NIPS)},
+volume={34},
+number={},
+pages={},
+year={2021}}
+
+@inproceedings{yolat24,
+title={{Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset}},
+author={Shuguang Dou, Xinyang Jiang, Lu Liu, Lu Ying, Caihua Shan, Yifei Shen, Xuanyi Dong, Yun Wang, Dongsheng Li, Cairong Zhao},
+booktitle={Proceedings of Advances in Neural Information Processing Systems (NIPS)},
+volume={},
+number={},
+pages={},
+year={2024}}
+
+```  
+Please do consider :star2: star our project to share with your community if you find this repository helpful!
+
+# Related Dataset
+[Benchmark for VG-based Detection and Chart Understanding](https://github.com/Vill-Lab/2024-TPAMI-VGDCU)
 

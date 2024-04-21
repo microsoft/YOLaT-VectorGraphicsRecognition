@@ -2,7 +2,10 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)](https://arxiv.org/abs/2111.03281)
 
-This repository is the official PyTorch implementation of our NeurIPS-2021 [paper](https://arxiv.org/abs/2111.03281): Recognizing Vector Graphics without Rasterization.
+This repository is the official PyTorch implementation of our tow powerful vector grahics recognition models.
+> NeurIPS-2021 [paper](https://arxiv.org/abs/2111.03281): Recognizing Vector Graphics without Rasterization.
+> TPAMI-2024 [paper](https://arxiv.org/abs/2111.03281): Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset
+
 
 ## Environments
 ```sh

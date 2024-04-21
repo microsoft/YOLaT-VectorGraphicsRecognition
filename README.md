@@ -7,7 +7,11 @@ This repository is the official PyTorch implementation of our two powerful vecto
 
 > TPAMI-2024 [paper](https://arxiv.org/abs/2111.03281): Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset
 
+<p align="center">
+<img alt="img-name" src="misc/RGvsVG.png" width="900">
 
+Rendering vector graphics into pixel arrays can result in significant memory costs or loss of information, as demonstrated in Figure 1. Additionally, this process discards high-level structural information within the primitives, which is critical for recognition tasks such as identifying corners and contours. 
+To summarize, we propose You Only Look at Text series (YOLaT & YOLaT++)  which addresses issues with raster graphics by taking in textual documents of vector graphics as input.
 ## Environments
 ```sh
 conda create -n your_env_name python=3.8

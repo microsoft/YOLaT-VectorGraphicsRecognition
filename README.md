@@ -73,7 +73,7 @@ year={2021}}
 @inproceedings{yolat24,
 title={{Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset}},
 author={Shuguang Dou, Xinyang Jiang, Lu Liu, Lu Ying, Caihua Shan, Yifei Shen, Xuanyi Dong, Yun Wang, Dongsheng Li, Cairong Zhao},
-booktitle={Proceedings of Advances in Neural Information Processing Systems (NIPS)},
+booktitle={IEEE Transactions on Pattern Analysis and Machine Intelligence},
 volume={},
 number={},
 pages={},

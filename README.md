@@ -10,7 +10,7 @@ This repository is the official PyTorch implementation of our two powerful vecto
 <p align="center">
 <img alt="img-name" src="misc/RGvsVG.png" width="900">
 
-Rendering vector graphics into pixel arrays can result in significant memory costs or loss of information, as demonstrated in Figure 1. Additionally, this process discards high-level structural information within the primitives, which is critical for recognition tasks such as identifying corners and contours. 
+Rendering vector graphics into pixel arrays can result in significant memory costs or loss of information, as demonstrated in above Figure 1. Additionally, this process discards high-level structural information within the primitives, which is critical for recognition tasks such as identifying corners and contours. 
 To summarize, we propose You Only Look at Text series (YOLaT & YOLaT++)  which addresses issues with raster graphics by taking in textual documents of vector graphics as input.
 ## Environments
 ```sh
@@ -53,8 +53,9 @@ CUDA_VISIBLE_DEVICES=0 python -u train.py --batch_size 4 --data_dir data/diagram
 ```
 
 ## YOLaT++
-
-
+<p align="center">
+<img alt="img-name" src="misc/Yolat%2B%2B.png" width="900">
+YOLaT++ is introduced, characterized by a hierarchical structure designed for VGs, spanning three levels: **Primitive, Curve, and Point**. Additionally, YOLaT++ employs a position-aware enhancement strategy to effectively differentiate similar primitives. 
 
 ## Citation
 BibTex:

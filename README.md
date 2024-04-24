@@ -5,7 +5,7 @@
 This repository is the official PyTorch implementation of our two powerful vector graphics recognition models.
 > NeurIPS-2021 [paper](https://arxiv.org/abs/2111.03281): Recognizing Vector Graphics without Rasterization.
 
-> TPAMI-2024 [paper](https://arxiv.org/abs/2111.03281): Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset
+> TPAMI-2024 [paper](https://arxiv.org/abs/2111.03281): Hierarchically Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset
 
 <p align="center">
 <img alt="img-name" src="misc/RGvsVG.png" width="900">
@@ -71,7 +71,7 @@ pages={},
 year={2021}}
 
 @inproceedings{yolat24,
-title={{Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset}},
+title={{Hierarchically Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset}},
 author={Shuguang Dou, Xinyang Jiang, Lu Liu, Lu Ying, Caihua Shan, Yifei Shen, Xuanyi Dong, Yun Wang, Dongsheng Li, Cairong Zhao},
 booktitle={IEEE Transactions on Pattern Analysis and Machine Intelligence},
 volume={},

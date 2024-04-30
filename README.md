@@ -5,7 +5,7 @@
 This repository is the official PyTorch implementation of our two powerful vector graphics recognition models.
 > NeurIPS-2021 [paper](https://arxiv.org/abs/2111.03281): Recognizing Vector Graphics without Rasterization.
 
-> TPAMI-2024 [paper](https://ieeexplore.ieee.org/abstract/document/10508965)): Hierarchically Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset
+> TPAMI-2024 [paper](https://ieeexplore.ieee.org/abstract/document/10508965): Hierarchically Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset
 
 <p align="center">
 <img alt="img-name" src="misc/RGvsVG.png" width="900">

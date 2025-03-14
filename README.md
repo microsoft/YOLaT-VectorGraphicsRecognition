@@ -70,14 +70,17 @@ number={},
 pages={},
 year={2021}}
 
-@inproceedings{yolat24,
-title={{Hierarchical Recognizing Vector Graphics and A New Chart-based Vector Graphics Dataset}},
-author={Shuguang Dou, Xinyang Jiang, Lu Liu, Lu Ying, Caihua Shan, Yifei Shen, Xuanyi Dong, Yun Wang, Dongsheng Li, Cairong Zhao},
-booktitle={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-volume={},
-number={},
-pages={},
-year={2024}}
+@article{journals/pami/DouJLYSSDWLZ24,
+  author       = {Shuguang Dou and Xinyang Jiang and Lu Liu and Lu Ying and Caihua Shan and Yifei Shen and Xuanyi Dong and Yun Wang and  Dongsheng Li and Cairong Zhao},
+  title        = {Hierarchically Recognizing Vector Graphics and {A} New Chart-Based
+                  Vector Graphics Dataset},
+  journal      = {{IEEE} Trans. Pattern Anal. Mach. Intell.},
+  volume       = {46},
+  number       = {12},
+  pages        = {7556--7573},
+  year         = {2024},
+  doi          = {10.1109/TPAMI.2024.3394298},
+}
 
 ```  
 Please do consider :star2: star our project to share with your community if you find this repository helpful!

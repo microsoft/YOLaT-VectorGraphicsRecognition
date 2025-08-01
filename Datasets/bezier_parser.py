@@ -6,6 +6,7 @@ from svgpathtools import parse_path, wsvg
 from svgpathtools import Path, Line, QuadraticBezier, CubicBezier, Arc
 from Datasets.a2c import a2c
 
+
 class BezierParser:
     def shape2BezierPath(self, shape):
         if shape['shape_name'] == 'line':
@@ -14,6 +15,9 @@ class BezierParser:
             bezier_path = self.path2BezierPath(shape)
         elif shape['shape_name'] == 'circle':
             bezier_path = self.circle2BezierPath(shape)
+        elif shape['shape_name'] == 'rect':
+            bezier_path = self.rect2BezierPath(shape)
+
         else:
             print('svg shape commend not implemented:', shape['shape_name'])
             raise SystemExit
@@ -31,7 +35,6 @@ class BezierParser:
         fa = arc_path.large_arc
         fs = arc_path.sweep
         ret = a2c(x1, y1, x2, y2, fa, fs, rx, ry, phi)
-        #print (ret)
 
         for i, curve in enumerate(ret):
             if i == 0:
@@ -56,11 +59,11 @@ class BezierParser:
             bezier_path.append(CubicBezier(complex(x1, y1), complex(control0_x, control0_y), 
                 complex(control1_x, control1_y), complex(x2, y2)
             ))
-        #print (bezier_path)
+
         return bezier_path
 
     def line2BezierPath(self, shape):
-        #print(shape, 'fooo')
+
         bezier_path = Path()
         line = CubicBezier(
             complex(float(shape['x1']), float(shape['y1'])), 
@@ -69,22 +72,69 @@ class BezierParser:
             complex(float(shape['x2']), float(shape['y2']))
         )
         bezier_path.append(line)
-        #node_dict = self._bezierPath2Graph(bezier_path, shape)
-        
-        #wsvg(line, filename = 'line_bezier.svg')
-        #wsvg(Line(complex(float(shape['x1']), float(shape['y1'])), complex(float(shape['x2']), float(shape['y2']))), filename = 'line.svg')
-        #print('fooo')
+
         return bezier_path
 
+    def cubic2BezierPath(self, shape):
+        bezier_path = Path()
+        line = CubicBezier(
+            complex(float(shape['x0']), float(shape['y0'])), 
+            complex(float(shape['control1_x']), float(shape['control1_y'])), 
+            complex(float(shape['control2_x']), float(shape['control2_y'])), 
+            complex(float(shape['x1']), float(shape['y1']))
+        )
+        bezier_path.append(line)
+
+        return bezier_path
+
+    
+    def rect2BezierPath(self, shape):
+        x = float(shape['x'])
+        y = float(shape['y'])
+        w = float(shape['w'])
+        h = float(shape['h'])
+
+        top_left = CubicBezier(
+            start = complex(x, y), 
+            control1 = complex(x, y), 
+            control2 = complex(x + w, y), 
+            end = complex(x + w, y)
+        )
+        
+        top_right = CubicBezier(
+            start = complex(x + w, y), 
+            control1 = complex(x + w, y), 
+            control2 = complex(x + w, y + h), 
+            end = complex(x + w, y + h)
+        )
+
+        bottom_right = CubicBezier(
+            start = complex(x + w, y + h), 
+            control1 = complex(x + w, y + h), 
+            control2 = complex(x, y + h), 
+            end = complex(x, y + h)
+        )
+
+        bottom_left = CubicBezier(
+            start = complex(x, y + h), 
+            control1 = complex(x, y + h), 
+            control2 = complex(x, y), 
+            end = complex(x, y)
+        )
+        
+        bezier_path = Path(top_left, top_right, bottom_right, 
+            bottom_left
+        )
+
+        return bezier_path
+    
+
     def path2BezierPath(self, shape):
-        #print(shape)
         path = parse_path(shape['d'])
         bezier_path = Path()
         for element in path:
             if isinstance(element, Arc):
-                #wsvg(shape, filename = 'arc.svg')
                 bezier_path += self._a2c(element)
-                #wsvg(bezier_path, filename = 'bezier.svg')
             elif isinstance(element, Line):
                 bezier_path += element
             else:
@@ -92,11 +142,9 @@ class BezierParser:
                 raise SystemExit
 
         #node_dict = self._bezierPath2Graph(bezier_path, shape)
-        
         return bezier_path
     
     def circle2BezierPath(self, shape):
-        #print(shape)
         cx = float(shape['cx'])
         cy = float(shape['cy'])
         r = float(shape['r'])
@@ -133,7 +181,6 @@ class BezierParser:
         bezier_path = Path(arc_top_right, arc_bottom_right, 
             arc_bottom_left, arc_top_left
         )
-
-        #wsvg(bezier_path, filename = 'circle_bezier.svg')
-        #node_dict = self._bezierPath2Graph(bezier_path, shape)
+        
         return bezier_path
+

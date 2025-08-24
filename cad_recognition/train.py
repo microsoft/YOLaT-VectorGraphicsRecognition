@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-
+import faulthandler
+faulthandler.enable()
 
 import __init__
 import torch
@@ -8,6 +9,7 @@ import numpy as np
 import logging
 import time
 from itertools import repeat, product
+from argparse import ArgumentParser
 
 #from torch_geometric.data import DataLoader, DataListLoader
 from torch import Tensor
@@ -20,15 +22,22 @@ from config import OptInit
 from sklearn.metrics import confusion_matrix
 import torchvision
 
-
 from utils.ckpt_util import load_pretrained_models, load_pretrained_optimizer, save_checkpoint
 from utils.metrics import AverageMeter
 from utils import optim
 from utils.det_util import get_batch_statistics, ap_per_class
 
 from Datasets.graph_dict3 import SESYDFloorPlan as CADDataset
-from architecture3cc_rpn_gp_iter2 import SparseCADGCN, DetectionLoss
 
+from Datasets.graph_dict4 import SESYDFloorPlan as CADGLDataset
+from Datasets.graph_dict4_floor import SESYDFloorPlan as CADGLDataset_floor
+
+from architecture3cc_rpn_gp_iter2 import SparseCADGCN, DetectionLoss
+from architecture3cc_rpn_gp_iter4 import YolatV2, LossV2
+
+import wandb
+from thop import profile
+from fvcore.nn import FlopCountAnalysis
 
 
 def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, labels=()):
@@ -120,12 +129,21 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
 
     return output
 
+def pad_2d_bool(x, padlen):
+    xlen = x.size(0)
+    if xlen < padlen:
+        new_x = x.new_zeros([padlen, padlen], dtype=x.dtype).fill_(False)
+        new_x[:xlen, :xlen] = x
+        x = new_x
+    return x.unsqueeze(0)
+
 def collate(data_list):
     r"""Collates a python list of data objects to the internal storage
     format of :class:`torch_geometric.data.InMemoryDataset`."""
-    keys = data_list[0].keys
+    keys = data_list[0].keys()
     data = data_list[0].__class__()
-
+    
+    # print(keys)
     for key in keys:
         data[key] = []
     slices = {key: [0] for key in keys}
@@ -147,14 +165,41 @@ def collate(data_list):
         data.__num_nodes__ = []
         for item in data_list:
             data.__num_nodes__.append(item.num_nodes)
-    
+
+    # Maximum number of nodes in the batch.
+    num_virtual_tokens = 1
+
+    max_node_num = max(i.size(0) for i in data["x"])
+    div = max_node_num // 4
+    max_node_num = 4 * div + 3
+    # print(data['type_edge'])
     for key in keys:
         item = data_list[0][key]
-        if isinstance(item, Tensor) and len(data_list) > 1:
+        if key == "adj":
+            data[key] = [pad_2d_bool(i, max_node_num + num_virtual_tokens) for i in data[key]]
+
+        elif key == "gt_bbox":
+            data[key] = torch.cat(data[key], dim=cat_dim)
+            data["sizes"] = [len(v) for v in data["gt_bbox"]]
+
+        elif key == "pos_batch":
+            data[key] = data[key]
+
+        elif key == "bbox_batch":
+            data[key] = data[key]
+        
+        elif key == "img":
+            data[key] = torch.stack(data[key], dim=0)
+
+        elif isinstance(item, Tensor) and len(data_list) > 1:
             if item.dim() > 0:
                 cat_dim = data.__cat_dim__(key, item)
                 cat_dim = 0 if cat_dim is None else cat_dim
-                data[key] = torch.cat(data[key], dim=cat_dim)
+                try:
+                    data[key] = torch.cat(data[key], dim=cat_dim)
+                except(RuntimeError):
+                    print("The dim of following value are not match", key)
+                    # print(data[key])
             else:
                 data[key] = torch.stack(data[key])
         elif isinstance(item, Tensor):  # Don't duplicate attributes...
@@ -168,24 +213,38 @@ def collate(data_list):
             data[key] = new_list
         slices[key] = torch.tensor(slices[key], dtype=torch.long)
 
+    # print(data)
+    # print("Slices", slices)
     return data, slices
 
 def main():
+    wandb.init(project="ChartYolat", entity="cesaredou", \
+                name="Only bar Local Train:Test=0.2:0.1  size<30k lr=2.5e-4") # mode="offline"
     opt = OptInit().get_args()
-    logging.info('===> Creating dataloader ...')
 
-    train_dataset = CADDataset(opt.data_dir, opt, partition = 'train', data_aug = opt.data_aug, do_mixup = opt.do_mixup, drop_edge = opt.drop_edge, bbox_sampling_step = opt.bbox_sampling_step)
+    logging.info('===> Creating dataloader ...')
+    if "Floor" in opt.data_dir:
+        train_dataset = CADGLDataset_floor(opt.data_dir, opt, partition = 'train', data_aug = opt.data_aug, do_mixup = opt.do_mixup, drop_edge = opt.drop_edge, bbox_sampling_step = opt.bbox_sampling_step)
+        test_dataset = CADGLDataset_floor(opt.data_dir, opt, partition = 'test', data_aug = False, do_mixup = False, drop_edge = False, bbox_sampling_step = opt.bbox_sampling_step)
+    elif opt.arch == "YolatV2":
+        train_dataset = f(opt.data_dir, opt, partition = 'train', data_aug = opt.data_aug, do_mixup = opt.do_mixup, drop_edge = opt.drop_edge, bbox_sampling_step = opt.bbox_sampling_step)
+        test_dataset = CADGLDataset(opt.data_dir, opt, partition = 'test', data_aug = False, do_mixup = False, drop_edge = False, bbox_sampling_step = opt.bbox_sampling_step)
+    else:
+        train_dataset = CADDataset(opt.data_dir, opt, partition = 'train', data_aug = opt.data_aug, do_mixup = opt.do_mixup, drop_edge = opt.drop_edge, bbox_sampling_step = opt.bbox_sampling_step)
+        test_dataset = CADDataset(opt.data_dir, opt, partition = 'test', data_aug = False, do_mixup = False, drop_edge = False, bbox_sampling_step = opt.bbox_sampling_step)
+        
     train_loader = DataLoader(train_dataset, 
         batch_size=opt.batch_size, 
         shuffle=True, 
-        num_workers=8, 
+        num_workers=16, 
+        pin_memory=True,
         collate_fn = collate)
     
-    test_dataset = CADDataset(opt.data_dir, opt, partition = 'test', data_aug = False, do_mixup = False, drop_edge = False, bbox_sampling_step = opt.bbox_sampling_step)
     test_loader = DataLoader(test_dataset, 
-        batch_size=opt.batch_size * 2, 
+        batch_size=opt.batch_size,  # *4 
         shuffle=False, 
-        num_workers=8, 
+        num_workers=16, 
+        pin_memory=True,
         collate_fn = collate)
 
 #    if opt.multi_gpus:
@@ -193,22 +252,28 @@ def main():
 #    else:
 #        train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
     opt.n_classes = len(list(set(train_dataset.class_dict.values())))
+    print("Num of class: ", opt.n_classes)
     opt.in_channels = test_dataset[0].x.shape[1]
     opt.n_objects = train_dataset.n_objects
 
     logging.info('===> Loading the network ...')
-       
-    model = SparseCADGCN(opt).to(opt.device)
-    
 
-    if opt.multi_gpus:
-        model = DataParallel(SparseDeepGCN(opt)).to(opt.device)
+    if opt.arch == "YolatV2":
+        model = YolatV2(opt).to(opt.device)
+        criterion = LossV2(opt)
+    else:
+        model = SparseCADGCN(opt).to(opt.device)
+        criterion = DetectionLoss(opt) #torch.nn.CrossEntropyLoss().to(opt.device)
+
+        if opt.multi_gpus:
+            model = DataParallel(SparseDeepGCN(opt)).to(opt.device)
+            
     logging.info('===> loading pre-trained ...')
     model, opt.best_value, opt.epoch = load_pretrained_models(model, opt.pretrained_model, opt.phase)
     logging.info(model)
 
     logging.info('===> Init the optimizer ...')
-    criterion = DetectionLoss(opt) #torch.nn.CrossEntropyLoss().to(opt.device)
+        
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr, weight_decay = opt.weight_decay)
 
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opt.lr_adjust_freq, opt.lr_decay_rate)
@@ -224,7 +289,8 @@ def main():
     for _ in range(opt.total_epochs):
         opt.epoch += 1
         train(model, train_loader, optimizer, scheduler, criterion, opt)
-        if opt.epoch % 1 == 0 and opt.epoch >= 20:
+        if opt.epoch % 10 == 0 and opt.epoch >= 10:
+        # if opt.epoch>=0:
             test_value = test(model, test_loader, criterion, opt)
         scheduler.step()
     logging.info('Saving the final model.Finish!')
@@ -237,10 +303,18 @@ def train(model, train_loader, optimizer, scheduler, criterion, opt):
 
         pos_slice = slices['pos']
         for key in slices:
-            if 'edge' in key:
+            if 'type_edge' in key:
                 s = slices[key]
-                #print(key, s)
                 o = getattr(data, key)
+                for i_s in range(0, len(s) - 1):
+                    start = s[i_s]
+                    end = s[i_s + 1]
+                    o[start:end] += slices['scene_feats'][i_s]
+                setattr(data, key, o)
+            elif 'edge' in key:
+                s = slices[key]
+                o = getattr(data, key)
+
                 for i_s in range(0, len(s) - 1):
                     start = s[i_s]
                     end = s[i_s + 1]
@@ -257,8 +331,6 @@ def train(model, train_loader, optimizer, scheduler, criterion, opt):
                     o[start:end] += bbox_offset[i_s]
                 setattr(data, key, o)
 
-        #raise SystemExit
-
         # ------------------ zero, output, loss
         optimizer.zero_grad()
 
@@ -266,9 +338,7 @@ def train(model, train_loader, optimizer, scheduler, criterion, opt):
             data.edge_control = None
             #data.edge_pos = None
 
-
         out = model(data, slices)
-
 
         if opt.arch == 'centernet' or opt.arch == 'votenet':
             loss_dict = criterion(out[0], out[1], 
@@ -284,13 +354,16 @@ def train(model, train_loader, optimizer, scheduler, criterion, opt):
         optimizer.step()
 
         opt.losses.update(loss_dict['loss'].item())
+
         # ------------------ show information
         if opt.iter % opt.print_freq == 0:
             output_string = 'Epoch:{}  Iter:{}[{}/{}]  LossMean:{Losses.avg: .4f} '.format(
                 opt.epoch, opt.iter, i + 1, len(train_loader), Losses=opt.losses)
             for key in loss_dict:
-                output_string +='{}:{:.4f} '.format(key, loss_dict[key])
-            output_string += 'lr:{:.4f}'.format(scheduler.get_last_lr()[0])
+                output_string +='{}:{:.6f} '.format(key, loss_dict[key])
+            wandb.log(loss_dict)
+            output_string += 'lr:{:.6f}'.format(scheduler.get_last_lr()[0])
+            wandb.log({"lr": scheduler.get_last_lr()[0]})
             logging.info(output_string)
             opt.losses.reset()
 
@@ -338,12 +411,21 @@ def test(model, test_loader, criterion, opt):
 
         overall_time = 0
         for i_batch, (data, slices) in enumerate(test_loader):
-            print(i_batch)
+            # print(i_batch)
             torch.cuda.synchronize() 
             start_time = time.time()
             pos_slice = slices['pos']
             for key in slices:
-                if 'edge' in key:
+                if 'type_edge' in key:
+                    s = slices[key]
+                    # print(key, s)
+                    o = getattr(data, key)
+                    for i_s in range(0, len(s) - 1):
+                        start = s[i_s]
+                        end = s[i_s + 1]
+                        o[start:end] += slices['scene_feats'][i_s]
+                    setattr(data, key, o)
+                elif 'edge' in key:
                     s = slices[key]
                     #print(key, s)
                     o = getattr(data, key)
@@ -367,9 +449,8 @@ def test(model, test_loader, criterion, opt):
                 data.edge_control = None
                 #data.edge_pos = None
 
-            
             out = model.predict(data, slices)
-            
+
             data.labels = data.labels[out[3]]
             data.has_obj = data.has_obj[out[3]]
             slices['bbox'] = out[4]
@@ -385,6 +466,7 @@ def test(model, test_loader, criterion, opt):
             n_total += pred_label.size(0)
 
             y_pred.append(pred_label.cpu().numpy())
+            # print(data.labels.cpu().numpy())
             y_true.append(data.labels.cpu().numpy())
 
             if pred_coord_max is not None:
@@ -443,20 +525,13 @@ def test(model, test_loader, criterion, opt):
 
                 pred_cls_img = torch.cat((1 - pred_cls_img[:, -1][:, None], pred_cls_img[:, 0:-1]), dim = 1)
                 pred = torch.cat((pred_coord_img, pred_cls_img), dim = 1).unsqueeze(0)
-                
-
                 outputs = non_max_suppression(pred, conf_thres=0.0, iou_thres=0.5)
                 outputs = [x.cpu() for x in outputs]
-
-                
 
                 iou_ths = np.linspace(0.5, 0.95, 10)
                 for i_th, th in enumerate(iou_ths):
                     sample_metrics[i_th] += get_batch_statistics(outputs, targets, iou_threshold=th)
 
-                
-            #if i_batch == 0: break
-        
 
         iou_ths = np.linspace(0.5, 0.95, opt.map_step)
         AP_total = 0
@@ -467,12 +542,13 @@ def test(model, test_loader, criterion, opt):
             
             true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics[i]))]
             precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
-            #print(AP)
+
             #test_value = test_metric(out.max(dim=1)[1], gt, opt.n_classes)
             #opt.test_values.update(test_value, opt.batch_size)
-            #print(test_loss)
             output_str += 'Epoch: [{0}]\t Iter: [{1}]\t''MAP@{2:.2f}: {3:.4f}\t'.format(
                 opt.epoch, opt.iter, iou_ths[i], np.mean(AP))
+            if i in [0, 5]:
+                wandb.log({'MAP@{0:.2f}'.format(iou_ths[i]): np.mean(AP)})
             output_str += 'Top1 Acc@{0:.2f}:{1:.4f}\t'.format(iou_ths[i], n_true * 1.0 / n_total)
             output_str += '\n'
             AP_total += np.mean(AP)
@@ -481,6 +557,7 @@ def test(model, test_loader, criterion, opt):
         
         output_str += 'Epoch: [{0}]\t Iter: [{1}]\t''MAP@ALL: {2:.4f}\t inference_Time: {3:.4f}   '.format(
                 opt.epoch, opt.iter,  AP_total / 10, overall_time * 1000)
+        wandb.log({"MAP@ALL": AP_total / 10})
 
         for key in test_loss:
             output_str += '{0}:{1:.4f}\t'.format(key, np.mean(test_loss[key]))
@@ -488,24 +565,36 @@ def test(model, test_loader, criterion, opt):
 
         y_pred = np.concatenate(y_pred, axis = 0)
         y_true = np.concatenate(y_true, axis = 0)
-        m = confusion_matrix(y_true, y_pred)
 
-        cate_names = [''] * len(list(test_loader.dataset.class_dict.keys()))
-        print()
-        output_str = '          '
-        for key in test_loader.dataset.class_dict:
-            cate_names[test_loader.dataset.class_dict[key]] = key
+        m = confusion_matrix(y_true, y_pred)
+        print(m.shape)
+        print(set(y_true), set(y_pred))
+
+        if len(set(y_pred)) > len(set(y_true)):
+            exist_index = set(y_pred)
+        else:
+            exist_index = set(y_true)
+        exist_class = [list(test_loader.dataset.class_dict.keys())[i] for i in exist_index]
+        cate_names = [''] * len(list(exist_class))
+
+        exist_class_dict = {value: index for index, value in enumerate(exist_class)}
+        output_str = '          '   
+        for key in exist_class_dict:
+            cate_names[exist_class_dict[key]] = key
+        print(cate_names)
         for cate in cate_names:
             output_str += '{:>10}'.format(cate)
-        print(output_str)
+        # print(output_str)
+        logging.info(output_str)
         for i, row in enumerate(m):
             output_str = '{:>10}'.format(cate_names[i])
             for m in row:
                 output_str += '{:10d}'.format(m)
-            print(output_str)
-
+            logging.info(output_str)
+            # print(output_str)
 
     opt.test_value = np.mean(AP)
+    
     return opt.test_value
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ from __future__ import division
 import __init__
 
 from config import OptInit
-from architecture import SparseCADGCN, DetectionLoss
+from architecture3cc_rpn_gp_iter2 import SparseCADGCN
 from Datasets.svg import SESYDFloorPlan
 from utils.ckpt_util import load_pretrained_models, load_pretrained_optimizer, save_checkpoint
 from utils.det_util import get_batch_statistics, ap_per_class
@@ -15,6 +15,7 @@ from torch.nn import functional as F
 import os
 import sys
 import time
+import math
 import datetime
 import argparse
 import numpy as np
@@ -40,6 +41,12 @@ from matplotlib.ticker import NullLocator
 from fvcore.nn import FlopCountAnalysis
 
 import logging
+from rich.progress import track
+from rich import print
+import heapq
+import pandas as pd
+from collections import Counter
+
 
 from thop import profile
 from utils.det_util import get_batch_statistics, ap_per_class, non_max_suppression
@@ -150,8 +157,10 @@ if __name__ == "__main__":
         from  Datasets.graph_dict2 import SESYDFloorPlan as CADDataset
     elif opt.graph == 'bezier_cc_bb_iter':
         from  Datasets.graph_dict3 import SESYDFloorPlan as CADDataset
+    elif opt.arch == 'YolatV2':
+        from Datasets.graph_dict4 import SESYDFloorPlan as CADDataset
     
-
+    # from Datasets.graph_dict4 import SESYDFloorPlan as CADDataset
     test_dataset = CADDataset(opt.data_dir, opt, partition = opt.phase, data_aug = False, do_mixup = False)
     test_loader = DataLoader(test_dataset, 
         batch_size=opt.batch_size, 
@@ -159,30 +168,50 @@ if __name__ == "__main__":
         num_workers=8, 
         collate_fn = collate)
 
-#    if opt.multi_gpus:
-#        train_loader = DataListLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
-#    else:
-#        train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
-    opt.n_classes = len(list(test_dataset.class_dict.keys()))
-    classes = [
-            'armchair', 
-            'bed', 
-            'door1', 
-            'door2', 
-            'sink1', 
-            'sink2', 
-            'sink3', 
-            'sink4', 
-            'sofa1', 
-            'sofa2', 
-            'table1', 
-            'table2', 
-            'table3', 
-            'tub', 
-            'window1', 
-            'window2', 
+    if "vage" in opt.data_dir:
+        classes = [
+            'mark_line',
+            'mark_point',
+            'mark_bar',
+            'mark_pie',
+            'mark_data',
+            'legend_symbol',
+            'legend_label',
+            'legend_title',
+            'X-axis_tick',
+            'X-axis_domain',
+            'X-axis_label',
+            'X-axis_title',
+            'Y-axis_tick',
+            'Y-axis_domain',
+            'Y-axis_label',
+            'Y-axis_title',
+            'chart_title',
             'None'
         ]
+
+    elif "plotly" in opt.data_dir:
+        classes =['mark_line',
+            'mark_point',
+            'mark_bar',
+            'mark_pie',
+            'mark_data',
+            'legend_symbol',
+            'legend_label',
+            'legend_title',
+            'X-axis_tick',
+            'X-axis_domain',
+            'X-axis_label',
+            'X-axis_title',
+            'Y-axis_tick',
+            'Y-axis_domain',
+            'Y-axis_label',
+            'Y-axis_title',
+            'chart_title',
+            'None']
+            
+    opt.n_classes = len(classes)
+
     opt.in_channels = test_dataset[0].x.shape[1]
 
     logging.info('===> Loading the network ...')
@@ -206,6 +235,8 @@ if __name__ == "__main__":
         from architecture3cc_rpn_gp_iter import SparseCADGCN, DetectionLoss
     elif opt.arch == 'centernet3cc_rpn_gp_iter2':
         from architecture3cc_rpn_gp_iter2 import SparseCADGCN, DetectionLoss
+    elif opt.arch == 'YolatV2':
+        from architecture3cc_rpn_gp_iter4 import YolatV2 as SparseCADGCN
 
     model = SparseCADGCN(opt).to(opt.device)
     total_params = sum(p.numel() for p in model.parameters())
@@ -214,7 +245,13 @@ if __name__ == "__main__":
     if opt.multi_gpus:
         model = DataParallel(SparseDeepGCN(opt)).to(opt.device)
     logging.info('===> loading pre-trained ...')
-    model, opt.best_value, opt.epoch = load_pretrained_models(model, opt.pretrained_model, opt.phase)
+
+    # print(opt.data_dir)
+    if 'vage' in opt.data_dir:
+        pretrained_model = "。/log/svg2video_chartyolatV2_mAP=8619/checkpoint/run182_2_best.pth"
+    elif "dataset"  in opt.data_dir:
+        pretrained_model = "。/log/sem_seg_sparse-res-attr_edge-n2-C64-k16-drop0.0-lr0.001_B128_20230816-165545_e737bee8-f38e-464b-a428-91262076be09/checkpoint/run182_2_best.pth"
+    model, opt.best_value, opt.epoch = load_pretrained_models(model, pretrained_model, opt.phase)
     logging.info(model)
 
     model.eval()  # Set in evaluation mode
@@ -223,19 +260,27 @@ if __name__ == "__main__":
     img_detections = []  # Stores detections for each image index
 
     print("\nPerforming object detection:")
-    
     mean_inference_time = 0
     with torch.no_grad():
         sample_metrics = []
         labels = []
         starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
 
-        for i_batch, (data, slices) in enumerate(test_loader):
+        for i_batch, (data, slices) in track(enumerate(test_loader)):
             prev_time = time.time()
-
+            # print(data)
             pos_slice = slices['pos']
             for key in slices:
-                if 'edge' in key:
+                if 'type_edge' in key:
+                    s = slices[key]
+                    # print(key, s)
+                    o = getattr(data, key)
+                    for i_s in range(0, len(s) - 1):
+                        start = s[i_s]
+                        end = s[i_s + 1]
+                        o[start:end] += slices['scene_feats'][i_s]
+                    setattr(data, key, o)
+                elif 'edge' in key:
                     s = slices[key]
                     #print(key, s)
                     o = getattr(data, key)
@@ -264,10 +309,6 @@ if __name__ == "__main__":
                 torch.cuda.synchronize() 
                 st = time.time()
                 out = model.predict(data, slices)
-                torch.cuda.synchronize() 
-                et = time.time()
-                mean_inference_time += et - st
-                #print('overal inference', et - st)
                 
                 pred_cls = out[0]
                 pred_coord = out[1]
@@ -281,17 +322,18 @@ if __name__ == "__main__":
                 #print(out[0].size(), data.labels.size())
                 #print(data.labels.size(), data.has_obj.size())
 
-            #print(slices)
+            
             image_slice = slices['x']
+            # print(slices)
+            # raise SystemError
             label_slice = slices['gt_labels']
-
+            opt.arch = "centernet3cc_rpn_gp_iter2"
             for i in range(0, len(image_slice) - 1):
                 if 'centernet3cc_rpn' not in opt.arch:
                     start = image_slice[i]
                     end = image_slice[i + 1]
                     is_control_mask = ~data.is_control[start:end].squeeze()
                     pos_img = data.pos[start:end][is_control_mask].cuda()
-
                     pred_coord_img = pred_coord[start:end][is_control_mask]
                     pred_cls_img = pred_cls[start:end][is_control_mask]
                 else:
@@ -299,14 +341,14 @@ if __name__ == "__main__":
                     t_end = slices['bbox'][i + 1]
                     pred_coord_img = pred_coord[t_start:t_end]
                     pred_cls_img = pred_cls[t_start:t_end]
-
                 if opt.arch == 'centernet3cc':
                     not_super = ~data.is_super[start:end][is_control_mask].squeeze()
                     pred_cls_img = pred_cls_img[not_super]
                     pred_coord_img = pred_coord_img[not_super]
                     pos_img = pos_img[not_super]
                 
-                #print('before', pred_coord_img, data.width[i], data.height[i])
+                # print('before', pred_coord_img, data.width[i], data.height[i])
+                # print(data.width)
                 pred_coord_img[:, 0] *= data.width[i]
                 pred_coord_img[:, 2] *= data.width[i]
                 pred_coord_img[:, 1] *= data.height[i]
@@ -337,7 +379,8 @@ if __name__ == "__main__":
 
                 torch.cuda.synchronize() 
                 st = time.time()
-                detections  = non_max_suppression(pred, conf_thres=0.75, nms_thres=0.5)
+                # detections  = non_max_suppression(pred, conf_thres=0.75, nms_thres=0.5)
+                detections  = non_max_suppression(pred, conf_thres=0.01, nms_thres=0.01)
                 torch.cuda.synchronize() 
                 et = time.time()
                 mean_inference_time += et - st
@@ -364,6 +407,7 @@ if __name__ == "__main__":
 
                 # Save image and detections
                 detections = [x.cpu().numpy() for x in detections]
+                print(detections)
                 imgs.extend([data.filepath[i]])
                 img_detections.extend(detections)
                 prev_time = time.time()
@@ -381,7 +425,7 @@ if __name__ == "__main__":
             print("(%d) Image: '%s'" % (img_i, path))
 
             # Create plot
-            img = Image.open(path.replace('svg', 'tiff')).convert(mode = 'RGB')
+            img = Image.open(path.split(".")[0] + ".png").convert(mode = 'RGB')
             plt.figure()
             fig, ax = plt.subplots(1)
             fig.set_size_inches(30, 20)
@@ -409,7 +453,7 @@ if __name__ == "__main__":
                     t = plt.text(
                         x1,
                         y1,
-                        s=classes[int(cls_pred)] + ' ' + '%.2f'%cls_conf,
+                        s=classes[int(cls_pred)]+ ' ' + '%.2f'%cls_conf,
                         color="white",
                         verticalalignment="bottom",
                         bbox={"color": color, "pad": 0},
@@ -425,6 +469,7 @@ if __name__ == "__main__":
             
             filename = os.path.dirname(path).split('/')[-1] + '_' + os.path.basename(path).split(".")[0]
 
-            output_path = os.path.join("output_all", f"{filename}.png")
+            output_path = os.path.join("output_v2p_mAP=82", f"{filename}.png")
+            print(output_path)
             plt.savefig(output_path, bbox_inches="tight", pad_inches=0.0)
             plt.close()

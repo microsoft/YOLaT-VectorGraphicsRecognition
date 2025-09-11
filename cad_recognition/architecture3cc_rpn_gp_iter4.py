@@ -418,7 +418,7 @@ class YolatV2(torch.nn.Module):
 
 class LossV2(torch.nn.Module):
     def __init__(self, opt):
-        super(ChartLossV2, self).__init__()
+        super(LossV2, self).__init__()
 
         if opt.classifier == 'softmax':
             self.cls_loss = torch.nn.CrossEntropyLoss()
